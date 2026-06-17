@@ -5,16 +5,17 @@ import { usePayment } from "../hooks/usePayment";
 
 const FEATURES = [
   { icon: "⚡", title: "Lightning Fast",   desc: "Metadata in under 3 seconds. Downloads start instantly with priority queuing." },
-  { icon: "🎵", title: "MP3 Export",       desc: "Extract clean audio from any YouTube video. Perfect for music and podcasts." },
-  { icon: "📱", title: "Mobile First",     desc: "Buttery smooth on any device, any screen size, any connection speed." },
+  { icon: "🌐", title: "Multi-Platform",   desc: "YouTube, Instagram, Facebook, Twitter/X, TikTok, Pinterest, Dailymotion, Vimeo & more." },
+  { icon: "🎵", title: "MP3 Export",       desc: "Extract clean audio from any video. Perfect for music, podcasts, and reels." },
   { icon: "🔒", title: "Secure & Private", desc: "No file storage on our servers. Downloads stream directly to your device." },
 ];
 
 const FAQS = [
-  { q: "Is it free to use?",              a: "Yes! Free users can download 360p videos without signing up. Premium unlocks 720p, 1080p, and MP3 for just Rs.1 — once, forever." },
-  { q: "How does the Rs.1 premium work?", a: "A single payment of Rs.1 via Razorpay gives you lifetime access to all quality options. No subscription, no auto-renewal, no tricks." },
-  { q: "Do I need to sign in?",           a: "Not for free 360p downloads. Login is required to activate and carry your premium status across sessions and devices." },
-  { q: "What formats are supported?",     a: "MP4 video in 360p, 720p, and 1080p, and MP3 audio extraction. More formats coming in v2." },
+  { q: "Is it free to use?",              a: "Yes! Free users can download 360p videos without signing up. Premium unlocks 720p, 1080p, 4K, and MP3 for just Rs.1 — once, forever." },
+  { q: "Which platforms are supported?",  a: "YouTube, Instagram, Facebook, Twitter/X, TikTok, Pinterest, Dailymotion, Vimeo — just paste any link and download." },
+  { q: "How does the Rs.1 premium work?", a: "A single payment of Rs.1 via Razorpay gives you lifetime access to 4K, 1080p, 720p, and MP3. No subscription, no auto-renewal." },
+  { q: "Do I need to sign in?",           a: "Not for free 360p downloads. Login is required to activate and carry your premium status across sessions." },
+  { q: "What formats are supported?",     a: "MP4 video in 360p, 720p, 1080p, 4K, and MP3 audio extraction. All from one link." },
 ];
 
 const staggerContainer = { animate: { transition: { staggerChildren: 0.08 } } };
@@ -85,7 +86,7 @@ export default function HomePage() {
             padding: "6px 16px", borderRadius: 99, fontSize: 12, fontWeight: 700,
             letterSpacing: "0.15em", textTransform: "uppercase",
             background: "rgba(255,45,45,0.1)", border: "1px solid rgba(255,45,45,0.25)", color: "#ff2d2d" }}>
-          ★ Fastest YouTube Downloader
+          ★ Universal Media Downloader
         </motion.div>
 
         <motion.h1 initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
@@ -93,14 +94,15 @@ export default function HomePage() {
           style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: "clamp(52px,10vw,120px)",
             lineHeight: 0.95, margin: "0 0 24px", color: "#f0f0f0", letterSpacing: "0.01em" }}>
           Download<br />
-          <span style={{ color: "#ff2d2d", textShadow: "0 0 80px rgba(255,45,45,0.4)" }}>Any Video.</span>
+          <span style={{ color: "#ff2d2d", textShadow: "0 0 80px rgba(255,45,45,0.4)" }}>Any Media.</span>
           <br />Instantly.
         </motion.h1>
 
         <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.2 }}
-          style={{ color: "#666", fontSize: "clamp(15px,2vw,18px)", maxWidth: 480,
+          style={{ color: "#666", fontSize: "clamp(15px,2vw,18px)", maxWidth: 520,
             margin: "0 auto 48px", lineHeight: 1.7 }}>
-          Paste a YouTube link. Get your video in seconds. HD downloads for just Rs.1 — lifetime.
+          Paste any link from YouTube, Instagram, Facebook, Twitter, TikTok, Pinterest and more.
+          Get your media in seconds. 4K downloads for just Rs.1 — lifetime.
         </motion.p>
 
         <DownloadCard />
@@ -175,9 +177,9 @@ export default function HomePage() {
             </p>
 
             <ul style={{ listStyle: "none", padding: 0, margin: "0 0 36px", textAlign: "left" }}>
-              {["720p & 1080p HD Downloads", "MP3 Audio Extraction",
-                "Priority Download Queue", "Ad-Free Experience",
-                "Faster Processing Servers"].map((perk) => (
+              {["4K, 1080p & 720p HD Downloads", "MP3 Audio Extraction",
+                "YouTube + Instagram + More", "Priority Download Queue",
+                "Ad-Free Experience"].map((perk) => (
                 <li key={perk} style={{ display: "flex", alignItems: "center", gap: 12,
                   fontSize: 15, color: "#f0f0f0", marginBottom: 12 }}>
                   <span style={{ width: 22, height: 22, borderRadius: "50%", flexShrink: 0,

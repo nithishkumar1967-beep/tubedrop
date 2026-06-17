@@ -13,33 +13,37 @@ const logger = require("../utils/logger");
 
 /**
  * POST /api/payment/create-order
- * Creates a Razorpay order for ₹1 lifetime premium.
+ * Creates a Razorpay order for selected plan.
  * Amount is ALWAYS set server-side — never from client.
+ * Body: { plan?: "basic" | "pro" | "ultimate" }
  */
 async function createOrder(req, res, next) {
   try {
     const { uid, email } = req.user;
-    logger.info(`Create order requested by uid: ${uid}`);
+    const { plan } = req.body;
+    const selectedPlan = plan || "basic";
+    logger.info(`Create order requested by uid: ${uid} plan: ${selectedPlan}`);
 
     // Idempotency: if already premium, return early
     const userDocs = await getCollection("users").doc(uid).get();
     if (userDocs.exists && userDocs.data().isPremium) {
       return res.status(200).json({
         success: false,
-        message: "Your account already has lifetime premium access.",
+        message: "Your account already has premium access.",
         alreadyPremium: true,
       });
     }
 
-    const order = await createPremiumOrder(uid);
+    const order = await createPremiumOrder(uid, selectedPlan);
 
     return res.status(200).json({
       success: true,
       data: {
         orderId: order.id,
-        amount: order.amount,   // In paise (100 = ₹1)
+        amount: order.amount,
         currency: order.currency,
-        keyId: process.env.RAZORPAY_KEY_ID, // Safe to expose — this is the public key
+        keyId: process.env.RAZORPAY_KEY_ID,
+        plan: selectedPlan,
       },
     });
   } catch (err) {

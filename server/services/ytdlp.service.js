@@ -14,26 +14,41 @@ const FORMAT_MAP = {
   "360p":  "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]/best[height<=360]",
   "720p":  "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]",
   "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best[height<=1080]",
+  "4K":    "bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[height<=2160][ext=mp4]/best[height<=2160]",
   "mp3":   "bestaudio/best",
 };
 
-const COMMON_OPTS = {
-  noWarnings: true,
-  noCallHome: true,
-  noCheckCertificates: true,
-  addHeader: ["referer:youtube.com", "user-agent:Mozilla/5.0"],
-  socketTimeout: 20,
-};
+function getCommonOpts(url) {
+  const low = url.toLowerCase();
+  let referer = "youtube.com";
+  if (low.includes("instagram")) referer = "instagram.com";
+  else if (low.includes("facebook") || low.includes("fb.")) referer = "facebook.com";
+  else if (low.includes("tiktok")) referer = "tiktok.com";
+  else if (low.includes("twitter") || low.includes("x.com")) referer = "twitter.com";
+  else if (low.includes("pinterest") || low.includes("pin.it")) referer = "pinterest.com";
+  else if (low.includes("dailymotion")) referer = "dailymotion.com";
+  else if (low.includes("vimeo")) referer = "vimeo.com";
+
+  return {
+    noWarnings: true,
+    noCallHome: true,
+    noCheckCertificates: true,
+    addHeader: [`referer:${referer}`, "user-agent:Mozilla/5.0"],
+    socketTimeout: 30,
+  };
+}
 
 async function fetchVideoInfo(url) {
   logger.debug(`fetchVideoInfo: ${url}`);
 
-  const info = await ytdlp(url, {
-    ...COMMON_OPTS,
+  const opts = {
+    ...getCommonOpts(url),
     dumpSingleJson: true,
     preferFreeFormats: true,
     youtubeSkipDashManifest: true,
-  });
+  };
+
+  const info = await ytdlp(url, opts);
 
   const heights = (info.formats || []).map((f) => f.height).filter(Boolean);
 
@@ -41,6 +56,7 @@ async function fetchVideoInfo(url) {
   if (heights.some((h) => h <= 360) || heights.length === 0) qualities.push("360p");
   if (heights.some((h) => h <= 720))  qualities.push("720p");
   if (heights.some((h) => h <= 1080)) qualities.push("1080p");
+  if (heights.some((h) => h <= 2160)) qualities.push("4K");
   qualities.push("mp3");
 
   return {
@@ -48,6 +64,9 @@ async function fetchVideoInfo(url) {
     thumbnail:       info.thumbnail || null,
     durationSeconds: info.duration  || 0,
     qualities,
+    platform:        info.extractor_key || "unknown",
+    uploader:        info.uploader || info.channel || null,
+    filesize:        info.filesize_approx || null,
   };
 }
 
@@ -63,7 +82,7 @@ async function downloadToTemp(url, quality) {
   logger.debug(`downloadToTemp quality=${quality} id=${fileId}`);
 
   const opts = {
-    ...COMMON_OPTS,
+    ...getCommonOpts(url),
     format,
     output: outTpl,
     mergeOutputFormat: isMp3 ? undefined : "mp4",
@@ -72,7 +91,7 @@ async function downloadToTemp(url, quality) {
   if (isMp3) {
     opts.extractAudio  = true;
     opts.audioFormat   = "mp3";
-    opts.audioQuality  = 0; // best
+    opts.audioQuality  = 0;
   }
 
   await ytdlp(url, opts);

@@ -24,7 +24,7 @@ export function usePayment() {
   const { currentUser, refreshUserDoc } = useAuth();
   const [paying, setPaying] = useState(false);
 
-  async function initiatePayment() {
+  async function initiatePayment(plan) {
     if (!currentUser) {
       toast.error("Please sign in first to upgrade to premium.");
       return;
@@ -37,7 +37,7 @@ export function usePayment() {
       const loaded = await loadRazorpayScript();
       if (!loaded) throw new Error("Failed to load Razorpay. Check your connection.");
 
-      const { data } = await paymentApi.createOrder();
+      const { data } = await paymentApi.createOrder(plan);
 
       if (data.alreadyPremium) {
         toast.success("You already have lifetime premium!", { id: toastId });

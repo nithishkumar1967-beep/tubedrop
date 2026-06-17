@@ -20,6 +20,7 @@ const videoRoutes    = require("./routes/video.routes");
 const downloadRoutes = require("./routes/download.routes");
 const paymentRoutes  = require("./routes/payment.routes");
 const healthRoutes   = require("./routes/health.routes");
+const historyRoutes  = require("./routes/history.routes");
 
 // Init external services
 initFirebaseAdmin();
@@ -45,6 +46,7 @@ app.use("/api/health",   healthRoutes);
 app.use("/api/video",    videoRoutes);
 app.use("/api/download", downloadRoutes);
 app.use("/api/payment",  paymentRoutes);
+app.use("/api/history",  historyRoutes);
 
 // 404
 app.use((_req, res) => res.status(404).json({ success: false, message: "Route not found." }));

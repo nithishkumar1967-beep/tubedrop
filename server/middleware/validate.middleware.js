@@ -7,9 +7,28 @@
 
 const { body, validationResult } = require("express-validator");
 
-// YouTube URL pattern (video + shorts)
-const YT_URL_REGEX =
-  /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=|shorts\/)|youtu\.be\/)[\w\-]{11}/;
+// Multi-platform URL patterns
+const PLATFORM_PATTERNS = {
+  youtube:    /^https?:\/\/(www\.)?(youtube\.com\/(watch\?v=|shorts\/|embed\/)|youtu\.be\/)[\w\-]{11}/,
+  instagram:  /^https?:\/\/(www\.)?instagram\.com\/(p|reel|reels|tv)\/[\w\-]+/,
+  facebook:   /^https?:\/\/(www\.)?(facebook\.com|fb\.com|fb\.watch)\/.+/,
+  twitter:    /^https?:\/\/(www\.)?(twitter\.com|x\.com)\/\w+\/status\/\d+/,
+  tiktok:     /^https?:\/\/(www\.)?tiktok\.com\/@[\w.-]+\/video\/\d+/,
+  pinterest:  /^https?:\/\/(www\.)?(pin\.it\/[\w]+|pinterest\.[a-z]+\/pin\/[\w-]+)/,
+  dailymotion:/^https?:\/\/(www\.)?dailymotion\.com\/video\/[\w]+/,
+  vimeo:      /^https?:\/\/(www\.)?vimeo\.com\/\d+/,
+};
+
+const SUPPORTED_URL_REGEX = new RegExp(
+  Object.values(PLATFORM_PATTERNS).map((r) => r.source).join("|")
+);
+
+function detectPlatform(url) {
+  for (const [name, regex] of Object.entries(PLATFORM_PATTERNS)) {
+    if (regex.test(url)) return name;
+  }
+  return "unknown";
+}
 
 /** Run validations and return 400 if any fail */
 function validate(rules) {
@@ -24,6 +43,10 @@ function validate(rules) {
           errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
         });
       }
+      // Attach detected platform to request
+      if (req.body.url) {
+        req.platform = detectPlatform(req.body.url);
+      }
       next();
     },
   ];
@@ -34,15 +57,15 @@ function validate(rules) {
 const videoInfoRules = [
   body("url")
     .trim()
-    .notEmpty().withMessage("YouTube URL is required.")
-    .matches(YT_URL_REGEX).withMessage("Invalid YouTube URL. Must be a standard video or Shorts link."),
+    .notEmpty().withMessage("URL is required.")
+    .matches(SUPPORTED_URL_REGEX).withMessage("Unsupported URL. Supported: YouTube, Instagram, Facebook, Twitter/X, TikTok, Pinterest, Dailymotion, Vimeo."),
 ];
 
 const freeDownloadRules = [
   body("url")
     .trim()
-    .notEmpty().withMessage("YouTube URL is required.")
-    .matches(YT_URL_REGEX).withMessage("Invalid YouTube URL."),
+    .notEmpty().withMessage("URL is required.")
+    .matches(SUPPORTED_URL_REGEX).withMessage("Unsupported URL."),
   body("quality")
     .equals("360p").withMessage("Free tier only supports 360p downloads."),
 ];
@@ -50,14 +73,14 @@ const freeDownloadRules = [
 const premiumDownloadRules = [
   body("url")
     .trim()
-    .notEmpty().withMessage("YouTube URL is required.")
-    .matches(YT_URL_REGEX).withMessage("Invalid YouTube URL."),
+    .notEmpty().withMessage("URL is required.")
+    .matches(SUPPORTED_URL_REGEX).withMessage("Unsupported URL."),
   body("quality")
-    .isIn(["720p", "1080p", "mp3"]).withMessage("Invalid quality. Choose 720p, 1080p, or mp3."),
+    .isIn(["720p", "1080p", "4K", "mp3"]).withMessage("Invalid quality. Choose 720p, 1080p, 4K, or mp3."),
 ];
 
 const createOrderRules = [
-  // No body params needed — amount is fixed server-side at ₹1
+  body("plan").optional().isIn(["basic", "pro", "ultimate"]).withMessage("Invalid plan. Choose basic, pro, or ultimate."),
 ];
 
 const verifyPaymentRules = [

@@ -10,7 +10,7 @@ import { auth } from "../firebase/firebase";
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_BASE_URL || "/api",
-  timeout: 60_000, // 60s — downloads can be slow
+  timeout: 120_000, // 120s — 4K files need more time
   headers: { "Content-Type": "application/json" },
 });
 
@@ -46,17 +46,89 @@ export const videoApi = {
   getInfo: (url) => api.post("/video/info", { url }),
 };
 
+/**
+ * Download with real progress tracking via XMLHttpRequest.
+ * Returns a promise that resolves with an axios-like response object.
+ */
+function downloadWithProgress(url, data, onProgress) {
+  return new Promise((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+
+    xhr.open("POST", `${api.defaults.baseURL}${url}`);
+    xhr.responseType = "blob";
+
+    // Attach auth header if signed in
+    const user = auth.currentUser;
+    if (user) {
+      user.getIdToken(false).then((token) => {
+        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+      }).catch(() => {});
+    }
+
+    xhr.setRequestHeader("Content-Type", "application/json");
+
+    xhr.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) {
+        onProgress(Math.round((e.loaded / e.total) * 100));
+      }
+    };
+
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) {
+        // Build a mock axios-like response
+        const contentType = xhr.getResponseHeader("content-type") || "application/octet-stream";
+        const contentDisposition = xhr.getResponseHeader("content-disposition") || "";
+        resolve({
+          data: xhr.response,
+          headers: {
+            "content-type": contentType,
+            "content-disposition": contentDisposition,
+          },
+        });
+      } else {
+        // Try to read error from blob
+        const reader = new FileReader();
+        reader.onload = () => {
+          try {
+            const errData = JSON.parse(reader.result);
+            reject(new Error(errData.message || "Download failed."));
+          } catch {
+            reject(new Error(`Download failed with status ${xhr.status}.`));
+          }
+        };
+        reader.onerror = () => reject(new Error("Download failed."));
+        reader.readAsText(xhr.response);
+      }
+    };
+
+    xhr.onerror = () => reject(new Error("Network error. Check your connection."));
+    xhr.onabort = () => reject(new DOMException("Aborted", "AbortError"));
+
+    xhr.send(JSON.stringify(data));
+  });
+}
+
 export const downloadApi = {
+  getFreeUrl: () => "/download/free",
+  getPremiumUrl: () => "/download/premium",
+
   free: (url) =>
     api.post("/download/free", { url, quality: "360p" }, { responseType: "blob" }),
 
   premium: (url, quality) =>
     api.post("/download/premium", { url, quality }, { responseType: "blob" }),
+
+  makeRequest: (endpoint, data, onProgress) =>
+    downloadWithProgress(endpoint, data, onProgress),
 };
 
 export const paymentApi = {
-  createOrder: () => api.post("/payment/create-order"),
+  createOrder: (plan) => api.post("/payment/create-order", { plan: plan || "basic" }),
   verifyPayment: (payload) => api.post("/payment/verify", payload),
+};
+
+export const historyApi = {
+  getHistory: () => api.get("/history"),
 };
 
 export default api;

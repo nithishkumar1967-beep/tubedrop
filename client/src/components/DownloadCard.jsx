@@ -9,12 +9,32 @@ import { useAuth } from "../context/AuthContext";
 import { usePayment } from "../hooks/usePayment";
 import toast from "react-hot-toast";
 
+const PLATFORM_INFO = {
+  youtube:    { label: "YouTube",    color: "#ff2d2d", icon: "▶" },
+  instagram:  { label: "Instagram",  color: "#e4405f", icon: "📷" },
+  facebook:   { label: "Facebook",   color: "#1877f2", icon: "👍" },
+  twitter:    { label: "Twitter / X",color: "#1da1f2", icon: "🐦" },
+  tiktok:     { label: "TikTok",     color: "#000000", icon: "🎵" },
+  pinterest:  { label: "Pinterest",  color: "#e60023", icon: "📌" },
+  dailymotion:{ label: "Dailymotion",color: "#00d2f3", icon: "🎬" },
+  vimeo:      { label: "Vimeo",      color: "#1ab7ea", icon: "🎥" },
+};
+
 const QUALITIES = [
-  { key: "360p",  label: "360p MP4",  free: true  },
-  { key: "720p",  label: "720p MP4",  free: false },
-  { key: "1080p", label: "1080p MP4", free: false },
-  { key: "mp3",   label: "MP3 Audio", free: false },
+  { key: "360p",  label: "360p MP4",  free: true     },
+  { key: "720p",  label: "720p MP4",  free: false    },
+  { key: "1080p", label: "1080p MP4", free: false    },
+  { key: "4K",    label: "4K MP4",    free: false    },
+  { key: "mp3",   label: "MP3 Audio", free: false    },
 ];
+
+const QUALITY_BADGES = {
+  "360p":  { label: "FREE",  color: "#ff6b6b", bg: "rgba(255,107,107,0.1)", border: "rgba(255,107,107,0.3)" },
+  "720p":  { label: "✓ HD",  color: "#4ade80", bg: "rgba(74,222,128,0.1)",  border: "rgba(74,222,128,0.3)" },
+  "1080p": { label: "✓ FHD", color: "#4ade80", bg: "rgba(74,222,128,0.1)",  border: "rgba(74,222,128,0.3)" },
+  "4K":    { label: "✦ 4K",  color: "#ffd700", bg: "rgba(255,215,0,0.1)",   border: "rgba(255,215,0,0.3)" },
+  "mp3":   { label: "✓ MP3", color: "#c084fc", bg: "rgba(192,132,252,0.1)", border: "rgba(192,132,252,0.3)" },
+};
 
 function formatDuration(secs) {
   if (!secs) return "";
@@ -45,14 +65,15 @@ const card = {
     boxShadow: "0 0 20px rgba(255,45,45,0.3)",
     whiteSpace: "nowrap",
   }),
-  qualityBtn: (isFree, locked) => ({
+  qualityBtn: (locked) => ({
     display: "flex", alignItems: "center", justifyContent: "space-between",
     padding: "12px 16px", borderRadius: 10, border: "none",
     background: "#18181f", color: "#f0f0f0",
-    cursor: "pointer", fontSize: 14, fontWeight: 600,
+    cursor: locked ? "not-allowed" : "pointer", fontSize: 14, fontWeight: 600,
     fontFamily: "DM Sans, sans-serif",
-    outline: `1px solid ${locked ? "rgba(255,215,0,0.2)" : isFree ? "rgba(255,255,255,0.07)" : "rgba(0,200,100,0.2)"}`,
-    transition: "outline 0.2s",
+    opacity: locked ? 0.5 : 1,
+    outline: "1px solid rgba(255,255,255,0.07)",
+    transition: "outline 0.2s, opacity 0.2s",
   }),
 };
 
@@ -60,7 +81,7 @@ export default function DownloadCard() {
   const [url, setUrl] = useState("");
   const inputRef = useRef();
   const { videoData, loading, error, fetchInfo, reset } = useVideoInfo();
-  const { startDownload, downloading } = useDownload();
+  const { startDownload, downloading, progress } = useDownload();
   const { isPremium, currentUser } = useAuth();
   const { initiatePayment, paying } = usePayment();
 
@@ -83,6 +104,12 @@ export default function DownloadCard() {
     await startDownload({ url: url.trim(), quality, isPremium });
   }
 
+  const platform = videoData?.platform
+    ? PLATFORM_INFO[videoData.platform.toLowerCase()] || null
+    : null;
+
+  const has4k = videoData?.qualities?.includes("4K");
+
   return (
     <motion.div initial={{ opacity: 0, y: 24 }} animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, delay: 0.3 }}>
@@ -96,7 +123,7 @@ export default function DownloadCard() {
               type="url"
               value={url}
               onChange={(e) => setUrl(e.target.value)}
-              placeholder="Paste YouTube link here..."
+              placeholder="Paste video / reel / post link here..."
               disabled={loading}
               style={card.input}
             />
@@ -114,6 +141,24 @@ export default function DownloadCard() {
               <motion.div initial={{ width: "0%" }} animate={{ width: "85%" }}
                 transition={{ duration: 2, ease: "easeInOut" }}
                 style={{ height: "100%", background: "#ff2d2d" }} />
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Download progress */}
+        <AnimatePresence>
+          {downloading && progress > 0 && progress < 100 && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ marginTop: 16, marginBottom: 8 }}>
+              <div style={{ display: "flex", justifyContent: "space-between", fontSize: 12, color: "#888", marginBottom: 4 }}>
+                <span>Downloading...</span>
+                <span>{Math.round(progress)}%</span>
+              </div>
+              <div style={{ height: 4, borderRadius: 99, background: "#18181f", overflow: "hidden" }}>
+                <motion.div
+                  animate={{ width: `${progress}%` }}
+                  style={{ height: "100%", background: "linear-gradient(90deg,#ff2d2d,#ff6b6b)", borderRadius: 99 }} />
+              </div>
             </motion.div>
           )}
         </AnimatePresence>
@@ -150,7 +195,9 @@ export default function DownloadCard() {
                 ) : (
                   <div style={{ width: 100, height: 60, borderRadius: 8, flexShrink: 0,
                     background: "#0d0d14", display: "flex", alignItems: "center",
-                    justifyContent: "center", fontSize: 24 }}>▶</div>
+                    justifyContent: "center", fontSize: 24 }}>
+                    {platform?.icon || "▶"}
+                  </div>
                 )}
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <p style={{ fontSize: 14, fontWeight: 600, color: "#f0f0f0", margin: "0 0 4px",
@@ -158,35 +205,63 @@ export default function DownloadCard() {
                     WebkitBoxOrient: "vertical", overflow: "hidden" }}>
                     {videoData.title}
                   </p>
-                  {videoData.durationSeconds > 0 && (
-                    <p style={{ fontSize: 12, color: "#555", margin: 0 }}>
-                      🕐 {formatDuration(videoData.durationSeconds)}
-                    </p>
-                  )}
+                  <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap", marginTop: 6 }}>
+                    {platform && (
+                      <span style={{ fontSize: 10, fontWeight: 700, letterSpacing: "0.1em", textTransform: "uppercase",
+                        padding: "3px 8px", borderRadius: 99, color: platform.color,
+                        border: `1px solid ${platform.color}33`, background: `${platform.color}11` }}>
+                        {platform.icon} {platform.label}
+                      </span>
+                    )}
+                    {videoData.uploader && (
+                      <span style={{ fontSize: 11, color: "#666" }}>{videoData.uploader}</span>
+                    )}
+                    {videoData.durationSeconds > 0 && (
+                      <span style={{ fontSize: 11, color: "#555" }}>🕐 {formatDuration(videoData.durationSeconds)}</span>
+                    )}
+                  </div>
                 </div>
               </div>
 
-              {/* Quality grid */}
+              {/* Quality grid - auto-download on first click */}
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 16 }}>
                 {QUALITIES.filter((q) =>
                   q.free || (videoData.qualities && videoData.qualities.includes(q.key))
                 ).map((q) => {
                   const locked = !q.free && !isPremium;
+                  const badge = QUALITY_BADGES[q.key];
                   return (
-                    <button key={q.key} disabled={downloading || paying}
-                      onClick={() => handleDownload(q.key, q.free)}
-                      style={card.qualityBtn(q.free, locked)}>
+                    <button key={q.key} disabled={downloading || paying || locked}
+                      onClick={() => {
+                        if (locked) {
+                          if (!currentUser) {
+                            toast("Sign in first, then upgrade!", { icon: "🔒" });
+                          } else {
+                            initiatePayment();
+                          }
+                          return;
+                        }
+                        handleDownload(q.key, q.free);
+                      }}
+                      style={card.qualityBtn(locked)}>
                       <span>⬇ {q.label}</span>
-                      {locked
-                        ? <Badge label="★ PRO"  color="#ffd700" bg="rgba(255,215,0,0.1)"  border="rgba(255,215,0,0.3)" />
-                        : q.free
-                          ? <Badge label="FREE"   color="#ff6b6b" bg="rgba(255,107,107,0.1)" border="rgba(255,107,107,0.3)" />
-                          : <Badge label="✓ HD"   color="#4ade80" bg="rgba(74,222,128,0.1)"  border="rgba(74,222,128,0.3)" />
-                      }
+                      <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
+                        color: badge.color, background: badge.bg, border: `1px solid ${badge.border}` }}>
+                        {badge.label}
+                      </span>
                     </button>
                   );
                 })}
               </div>
+
+              {has4k && !isPremium && (
+                <div style={{ textAlign: "center", marginBottom: 12 }}>
+                  <span style={{ fontSize: 12, color: "#ffd700", background: "rgba(255,215,0,0.08)",
+                    padding: "6px 14px", borderRadius: 99, border: "1px solid rgba(255,215,0,0.2)" }}>
+                    ✦ 4K available — Upgrade for Rs.1 to download
+                  </span>
+                </div>
+              )}
 
               <div style={{ textAlign: "center" }}>
                 <button onClick={() => { reset(); setUrl(""); }}
@@ -202,18 +277,11 @@ export default function DownloadCard() {
 
         {!videoData && !loading && !error && (
           <p style={{ textAlign: "center", fontSize: 12, color: "#444", marginTop: 16 }}>
-            Supports youtube.com/watch, youtu.be, and YouTube Shorts
+            Supports YouTube, Instagram, Facebook, Twitter/X, TikTok, Pinterest, Dailymotion, Vimeo
           </p>
         )}
       </div>
     </motion.div>
-  );
-}
-
-function Badge({ label, color, bg, border }) {
-  return (
-    <span style={{ fontSize: 11, fontWeight: 700, padding: "3px 10px", borderRadius: 99,
-      color, background: bg, border: `1px solid ${border}` }}>{label}</span>
   );
 }
 

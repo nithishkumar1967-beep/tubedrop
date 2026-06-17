@@ -10,7 +10,12 @@ const Razorpay = require("razorpay");
 const crypto = require("crypto");
 const logger = require("../utils/logger");
 
-const PREMIUM_AMOUNT_PAISE = 100; // ₹1 = 100 paise — FIXED, never from client
+const PLANS = {
+  basic:    { label: "Basic (720p)",   amount: 100,   currency: "INR" },   // ₹1
+  pro:      { label: "Pro (1080p)",     amount: 500,   currency: "INR" },   // ₹5
+  ultimate: { label: "Ultimate (4K)",   amount: 1000,  currency: "INR" },   // ₹10
+};
+
 const CURRENCY = "INR";
 
 let instance;
@@ -27,25 +32,31 @@ function getRazorpayInstance() {
 }
 
 /**
- * Create a Razorpay order for the fixed ₹1 premium amount.
+ * Create a Razorpay order for a given plan.
+ * @param {string} uid - Firebase user UID
+ * @param {string} plan - Plan key: "basic" | "pro" | "ultimate"
  * @returns {Promise<{id, amount, currency, receipt}>}
  */
-async function createPremiumOrder(uid) {
+async function createPremiumOrder(uid, plan = "basic") {
+  const planConfig = PLANS[plan];
+  if (!planConfig) throw Object.assign(new Error(`Invalid plan: ${plan}`), { status: 400 });
+
   const razorpay = getRazorpayInstance();
 
   const receipt = `tubedrop_${uid.slice(0, 12)}_${Date.now()}`;
 
   const order = await razorpay.orders.create({
-    amount: PREMIUM_AMOUNT_PAISE,
-    currency: CURRENCY,
+    amount: planConfig.amount,
+    currency: planConfig.currency,
     receipt,
     notes: {
-      product: "TubeDrop Premium Lifetime",
+      product: `TubeDrop ${planConfig.label}`,
+      plan,
       uid,
     },
   });
 
-  logger.info(`Razorpay order created: ${order.id} for uid: ${uid}`);
+  logger.info(`Razorpay order created: ${order.id} for uid: ${uid} plan: ${plan}`);
   return order;
 }
 

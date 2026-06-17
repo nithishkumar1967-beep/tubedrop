@@ -119,6 +119,10 @@ export default function Navbar() {
                       </p>
                     )}
                   </div>
+                  <button style={S.dropItem}
+                    onClick={() => { navigate("/history"); setMenuOpen(false); }}>
+                    📂 Download History
+                  </button>
                   {!isPremium && (
                     <button style={{ ...S.dropItem, color: "#ffd700" }}
                       disabled={paying}
