@@ -91,4 +91,4 @@ function verifyPaymentSignature(orderId, paymentId, signature) {
   return isValid;
 }
 
-module.exports = { createPremiumOrder, verifyPaymentSignature, PREMIUM_AMOUNT_PAISE };
+module.exports = { createPremiumOrder, verifyPaymentSignature };

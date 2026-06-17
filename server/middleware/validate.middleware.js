@@ -17,6 +17,7 @@ const PLATFORM_PATTERNS = {
   pinterest:  /^https?:\/\/(www\.)?(pin\.it\/[\w]+|pinterest\.[a-z]+\/pin\/[\w-]+)/,
   dailymotion:/^https?:\/\/(www\.)?dailymotion\.com\/video\/[\w]+/,
   vimeo:      /^https?:\/\/(www\.)?vimeo\.com\/\d+/,
+  googlephotos:/^https?:\/\/(www\.)?(photos\.google\.com|drive\.google\.com)\/.+/,
 };
 
 const SUPPORTED_URL_REGEX = new RegExp(

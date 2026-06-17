@@ -1,7 +1,7 @@
 /**
  * AuthContext
  * Provides: currentUser, userDoc, loading, signInWithGoogle, signOut
- * userDoc is the Firestore document — includes isPremium flag.
+ * userDoc is fetched via API (Admin SDK) to avoid Firestore security rule issues.
  */
 
 import { createContext, useContext, useEffect, useState } from "react";
@@ -10,8 +10,8 @@ import {
   signOut as fbSignOut,
   signInWithPopup,
 } from "firebase/auth";
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { auth, db, googleProvider } from "../firebase/firebase";
+import { auth, googleProvider } from "../firebase/firebase";
+import { userApi } from "../services/api.service";
 
 const AuthContext = createContext(null);
 
@@ -20,12 +20,11 @@ export function AuthProvider({ children }) {
   const [userDoc, setUserDoc] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Sync auth state changes
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setCurrentUser(user);
       if (user) {
-        await syncUserDoc(user);
+        await fetchUserDoc(user);
       } else {
         setUserDoc(null);
       }
@@ -34,38 +33,30 @@ export function AuthProvider({ children }) {
     return unsubscribe;
   }, []);
 
-  /**
-   * Create or refresh the Firestore user document.
-   * Does NOT overwrite isPremium if already true.
-   */
-  async function syncUserDoc(user) {
-    const ref = doc(db, "users", user.uid);
-    const snap = await getDoc(ref);
-
-    if (!snap.exists()) {
-      const newDoc = {
+  async function fetchUserDoc(user) {
+    try {
+      const res = await userApi.sync({
         uid: user.uid,
-        name: user.displayName || "",
-        email: user.email || "",
-        photoURL: user.photoURL || "",
-        isPremium: false,
-        premiumActivatedAt: null,
-        paymentId: null,
-        createdAt: serverTimestamp(),
-      };
-      await setDoc(ref, newDoc);
-      setUserDoc(newDoc);
-    } else {
-      setUserDoc({ uid: user.uid, ...snap.data() });
+        email: user.email,
+        name: user.displayName,
+        photoURL: user.photoURL,
+      });
+      if (res.data?.data) {
+        setUserDoc(res.data.data);
+      }
+    } catch {
+      setUserDoc({ uid: user.uid, isPremium: false });
     }
   }
 
-  /** Re-fetch userDoc from Firestore (call after payment verification). */
   async function refreshUserDoc() {
     if (!currentUser) return;
-    const ref = doc(db, "users", currentUser.uid);
-    const snap = await getDoc(ref);
-    if (snap.exists()) setUserDoc({ uid: currentUser.uid, ...snap.data() });
+    try {
+      const res = await userApi.getMe();
+      if (res.data?.data) setUserDoc(res.data.data);
+    } catch {
+      // keep existing userDoc on failure
+    }
   }
 
   async function signInWithGoogle() {

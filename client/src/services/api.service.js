@@ -51,20 +51,24 @@ export const videoApi = {
  * Returns a promise that resolves with an axios-like response object.
  */
 function downloadWithProgress(url, data, onProgress) {
-  return new Promise((resolve, reject) => {
+  return new Promise(async (resolve, reject) => {
     const xhr = new XMLHttpRequest();
 
     xhr.open("POST", `${api.defaults.baseURL}${url}`);
     xhr.responseType = "blob";
 
-    // Attach auth header if signed in
+    // Await auth token before setting headers and sending
     const user = auth.currentUser;
+    let token = null;
     if (user) {
-      user.getIdToken(false).then((token) => {
-        xhr.setRequestHeader("Authorization", `Bearer ${token}`);
-      }).catch(() => {});
+      try {
+        token = await user.getIdToken(false);
+      } catch { /* proceed without auth */ }
     }
 
+    if (token) {
+      xhr.setRequestHeader("Authorization", `Bearer ${token}`);
+    }
     xhr.setRequestHeader("Content-Type", "application/json");
 
     xhr.onprogress = (e) => {
@@ -75,7 +79,6 @@ function downloadWithProgress(url, data, onProgress) {
 
     xhr.onload = () => {
       if (xhr.status >= 200 && xhr.status < 300) {
-        // Build a mock axios-like response
         const contentType = xhr.getResponseHeader("content-type") || "application/octet-stream";
         const contentDisposition = xhr.getResponseHeader("content-disposition") || "";
         resolve({
@@ -86,7 +89,6 @@ function downloadWithProgress(url, data, onProgress) {
           },
         });
       } else {
-        // Try to read error from blob
         const reader = new FileReader();
         reader.onload = () => {
           try {
@@ -129,6 +131,11 @@ export const paymentApi = {
 
 export const historyApi = {
   getHistory: () => api.get("/history"),
+};
+
+export const userApi = {
+  getMe: () => api.get("/user/me"),
+  sync: (data) => api.post("/user/sync", data),
 };
 
 export default api;

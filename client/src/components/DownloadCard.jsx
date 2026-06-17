@@ -280,6 +280,9 @@ export default function DownloadCard() {
             Supports YouTube, Instagram, Facebook, Twitter/X, TikTok, Pinterest, Dailymotion, Vimeo
           </p>
         )}
+        <p style={{ textAlign: "center", fontSize: 10, color: "#333", marginTop: 12, lineHeight: 1.5 }}>
+          Only download content you own or have permission to download. Respect copyright laws.
+        </p>
       </div>
     </motion.div>
   );

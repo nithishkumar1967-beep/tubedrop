@@ -1,7 +1,9 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import DownloadCard from "../components/DownloadCard";
 import { usePayment } from "../hooks/usePayment";
+import { useAuth } from "../context/AuthContext";
 
 const FEATURES = [
   { icon: "⚡", title: "Lightning Fast",   desc: "Metadata in under 3 seconds. Downloads start instantly with priority queuing." },
@@ -67,6 +69,7 @@ function FaqItem({ q, a }) {
 // ── HomePage ──────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const { initiatePayment, paying } = usePayment();
+  const { isPremium } = useAuth();
 
   return (
     <div style={{ fontFamily: "DM Sans, sans-serif" }}>
@@ -191,14 +194,22 @@ export default function HomePage() {
               ))}
             </ul>
 
-            <button onClick={initiatePayment} disabled={paying}
-              style={{ width: "100%", padding: "16px 0", borderRadius: 12, border: "none",
-                background: "linear-gradient(135deg,#ffd700,#ffb300)", color: "#000",
-                fontSize: 16, fontWeight: 900, fontFamily: "DM Sans, sans-serif",
-                cursor: paying ? "not-allowed" : "pointer", opacity: paying ? 0.6 : 1,
-                boxShadow: "0 0 40px rgba(255,215,0,0.25)" }}>
-              {paying ? "Processing..." : "★ Unlock Premium for Rs.1"}
-            </button>
+            {isPremium ? (
+              <div style={{ width: "100%", padding: "16px 0", borderRadius: 12,
+                background: "rgba(255,215,0,0.1)", border: "1px solid rgba(255,215,0,0.3)",
+                textAlign: "center", color: "#ffd700", fontSize: 16, fontWeight: 800 }}>
+                ✓ Premium Active
+              </div>
+            ) : (
+              <button onClick={() => initiatePayment()} disabled={paying}
+                style={{ width: "100%", padding: "16px 0", borderRadius: 12, border: "none",
+                  background: "linear-gradient(135deg,#ffd700,#ffb300)", color: "#000",
+                  fontSize: 16, fontWeight: 900, fontFamily: "DM Sans, sans-serif",
+                  cursor: paying ? "not-allowed" : "pointer", opacity: paying ? 0.6 : 1,
+                  boxShadow: "0 0 40px rgba(255,215,0,0.25)" }}>
+                {paying ? "Processing..." : "★ Unlock Premium for Rs.1"}
+              </button>
+            )}
             <p style={{ fontSize: 12, color: "#444", marginTop: 12 }}>
               Powered by Razorpay · Secure · Instant activation
             </p>
@@ -233,11 +244,15 @@ export default function HomePage() {
         </div>
         <span>© 2025 TubeDrop · Built for India & beyond</span>
         <div style={{ display: "flex", gap: 20 }}>
-          {["Privacy", "Terms", "Contact"].map((l) => (
-            <a key={l} href="#" style={{ color: "#444", textDecoration: "none" }}
-              onMouseOver={(e) => e.target.style.color = "#888"}
-              onMouseOut={(e) => e.target.style.color = "#444"}>{l}</a>
-          ))}
+          <Link to="/legal/privacy" style={{ color: "#444", textDecoration: "none" }}
+            onMouseOver={(e) => e.target.style.color = "#888"}
+            onMouseOut={(e) => e.target.style.color = "#444"}>Privacy</Link>
+          <Link to="/legal/terms" style={{ color: "#444", textDecoration: "none" }}
+            onMouseOver={(e) => e.target.style.color = "#888"}
+            onMouseOut={(e) => e.target.style.color = "#444"}>Terms</Link>
+          <Link to="/legal/disclaimer" style={{ color: "#444", textDecoration: "none" }}
+            onMouseOver={(e) => e.target.style.color = "#888"}
+            onMouseOut={(e) => e.target.style.color = "#444"}>Legal</Link>
         </div>
       </footer>
     </div>

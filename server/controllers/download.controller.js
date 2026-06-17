@@ -23,6 +23,7 @@ async function streamDownload(req, res, next, quality) {
 
   try {
     const { url } = req.body;
+    const platform = req.platform || "unknown";
     logger.info(`Download started: quality=${quality} url=${url} ip=${req.ip}`);
 
     const { filePath: fp, fileName, mimeType } = await downloadToTemp(url, quality);
@@ -48,22 +49,20 @@ async function streamDownload(req, res, next, quality) {
       deleteFile(filePath);
     });
 
-    // If client disconnects early, still clean up
     req.on("close", () => {
       if (filePath) deleteFile(filePath);
     });
 
     stream.pipe(res);
 
-    // Log download to Firestore (best-effort, non-blocking)
-    if (req.user) {
-      logDownload(req.user.uid, url, quality).catch((e) =>
-        logger.warn(`Failed to log download: ${e.message}`)
-      );
-    }
+    // Log download (best-effort, non-blocking) — free + premium both logged
+    const uid = req.user?.uid || "anonymous";
+    logDownload(uid, url, quality, platform).catch((e) =>
+      logger.warn(`Failed to log download: ${e.message}`)
+    );
   } catch (err) {
     if (filePath) {
-      scheduleCleanup(filePath); // Ensure cleanup even on error
+      scheduleCleanup(filePath);
     }
     next(err);
   }
@@ -89,11 +88,12 @@ async function premiumDownload(req, res, next) {
 /**
  * Write a download record to Firestore (analytics).
  */
-async function logDownload(uid, videoUrl, quality) {
+async function logDownload(uid, videoUrl, quality, platform) {
   await getCollection("downloads").add({
     userId: uid,
     videoUrl,
     quality,
+    platform: platform || "unknown",
     format: quality === "mp3" ? "mp3" : "mp4",
     downloadedAt: new Date().toISOString(),
   });

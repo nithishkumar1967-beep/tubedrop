@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
 import { useAuth } from "../context/AuthContext";
 import { historyApi } from "../services/api.service";
@@ -45,9 +46,15 @@ export default function HistoryPage() {
   return (
     <div style={{ maxWidth: 800, margin: "0 auto", padding: "48px 6vw" }}>
       <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-        <h1 style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 48, margin: "0 0 32px", color: "#f0f0f0" }}>
-          Download History
-        </h1>
+        <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 32 }}>
+          <h1 style={{ fontFamily: "Bebas Neue, sans-serif", fontSize: 48, margin: 0, color: "#f0f0f0" }}>
+            Download History
+          </h1>
+          <Link to="/" style={{ fontSize: 13, color: "#888", textDecoration: "none", padding: "8px 16px",
+            borderRadius: 8, border: "1px solid rgba(255,255,255,0.1)" }}>
+            ✕ Close
+          </Link>
+        </div>
 
         {loading && <p style={{ color: "#555" }}>Loading...</p>}
         {error && <p style={{ color: "#ff6b6b" }}>{error}</p>}

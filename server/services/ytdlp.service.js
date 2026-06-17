@@ -11,10 +11,10 @@ const logger = require("../utils/logger");
 const { getTempDirPath } = require("../utils/fileCleanup");
 
 const FORMAT_MAP = {
-  "360p":  "bestvideo[height<=360][ext=mp4]+bestaudio[ext=m4a]/best[height<=360][ext=mp4]/best[height<=360]",
-  "720p":  "bestvideo[height<=720][ext=mp4]+bestaudio[ext=m4a]/best[height<=720][ext=mp4]/best[height<=720]",
-  "1080p": "bestvideo[height<=1080][ext=mp4]+bestaudio[ext=m4a]/best[height<=1080][ext=mp4]/best[height<=1080]",
-  "4K":    "bestvideo[height<=2160][ext=mp4]+bestaudio[ext=m4a]/best[height<=2160][ext=mp4]/best[height<=2160]",
+  "360p":  "best[height<=360]/bestvideo[height<=360]+bestaudio",
+  "720p":  "best[height<=720]/bestvideo[height<=720]+bestaudio",
+  "1080p": "best[height<=1080]/bestvideo[height<=1080]+bestaudio",
+  "4K":    "best[height<=2160]/bestvideo[height<=2160]+bestaudio",
   "mp3":   "bestaudio/best",
 };
 
